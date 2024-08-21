@@ -1,47 +1,66 @@
 const userModel = require("../model/userModel");
 const { validateEmail, validatePassword } = require("../utils/validate");
 const { validate: isUuid } = require("uuid");
-
+const jwt = require("jsonwebtoken");
 const registerUser = async (req, res) => {
   const { email, password } = req.body;
   try {
     if (!validateEmail(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+      return res.status(400).json("Invalid email format");
     }
 
     if (!validatePassword(password)) {
-      return res.status(400).json({ message: "Invalid password format" });
+      return res.status(400).json("Invalid password format");
     }
 
     const existingUser = await userModel.getUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ message: "Email already in use" });
+      return res.status(400).json("Email already in use");
     }
 
     const newUser = await userModel.createUser(email, password);
-    res.status(201).json(newUser);
+    res.status(201).json("Success");
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json("Internal Server Error");
   }
 };
 
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await userModel.loginUser(email, password);
+    if (user) {
+      // Generate JWT
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+      });
+
+      // Send token to client
+      res.status(200).json({ message: "Success", token });
+    } else {
+      res.status(401).json("Wrong email or password");
+    }
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+};
 const getUserById = async (req, res) => {
   const id = req.params.id;
 
   if (!isUuid(id)) {
-    return res.status(400).json({ message: "Invalid ID format" });
+    return res.status(400).json("Invalid ID format");
   }
 
   try {
     const user = await userModel.getUserById(id);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json("User not found");
     }
 
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json("Internal Server Error");
   }
 };
 
@@ -50,20 +69,18 @@ const updateUserById = async (req, res) => {
   const { email, password } = req.body;
   try {
     if (!validateEmail(email) || !validatePassword(password)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid email or password format" });
+      return res.status(400).json("Invalid email or password format");
     }
 
     const updatedUser = await userModel.updateUserById(id, email, password);
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json("User not found");
     }
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json("Internal Server Error");
   }
 };
 
@@ -73,12 +90,12 @@ const deleteUserById = async (req, res) => {
     const deletedUser = await userModel.deleteUserById(id);
 
     if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json("User not found");
     }
 
     res.status(200).json(deletedUser);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json("Internal Server Error");
   }
 };
 
@@ -87,7 +104,7 @@ const getAllUsers = async (req, res) => {
     const users = await userModel.getAllUsers();
     res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json("Internal Server Error");
   }
 };
 
@@ -97,4 +114,5 @@ module.exports = {
   getAllUsers,
   updateUserById,
   deleteUserById,
+  loginUser,
 };

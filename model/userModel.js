@@ -15,6 +15,22 @@ const createUser = async (email, password) => {
   }
 };
 
+const loginUser = async (email, password) => {
+  const sql = 'SELECT * FROM "users" WHERE email=$1 AND password=$2';
+  const values = [email, password];
+  try {
+    const result = await pool.query(sql, values);
+    if (result.rows.length > 0) {
+      return result.rows[0];
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error logging in user:", error);
+    throw new Error("Error logging in user");
+  }
+};
+
 const getUserByEmail = async (email) => {
   const query = 'SELECT * FROM "users" WHERE email=$1';
   const values = [email];
@@ -81,5 +97,5 @@ module.exports = {
   createUser,
   updateUserById,
   deleteUserById,
-  getUserByEmail,
+  getUserByEmail,loginUser
 };
